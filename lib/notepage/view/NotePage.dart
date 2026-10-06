@@ -1,28 +1,16 @@
 import 'package:cars/core/helpers/hive_helper.dart';
+import 'package:cars/notepage/cupit/cubit/note_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class Notepage extends StatefulWidget {
-  const Notepage({super.key});
-
-  @override
-  State<Notepage> createState() => _NotepageState();
-}
-
-class _NotepageState extends State<Notepage> {
+class Notepage extends StatelessWidget {
   final _controller = TextEditingController();
   final _key = GlobalKey<FormState>();
-  @override
-  bool _islooding = false;
-  void didChangeDependencies() async {
-    _islooding = true;
-    await HiveHelper.getNote();
-    _islooding = false;
-    setState(() {});
-    super.didChangeDependencies();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final cupit = context.read<NoteCubit>();
+
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.brown,
@@ -59,8 +47,7 @@ class _NotepageState extends State<Notepage> {
                         _key.currentState!.validate();
                         if (_controller.text.isNotEmpty) {
                           _controller.text;
-                          HiveHelper.addNote(_controller.text);
-                          setState(() {});
+                          cupit.addNote(_controller.text);
                           Navigator.pop(context);
                           _controller.text = "";
                         }
@@ -82,17 +69,23 @@ class _NotepageState extends State<Notepage> {
         actions: [
           TextButton(
             onPressed: () {
-              HiveHelper.deleteAllNote();
-              setState(() {});
+              cupit.deleteAllNote();
+
+              // setState(() {});
             },
             child: Text("Cleat All", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
 
-      body: _islooding
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
+      body: BlocBuilder<NoteCubit, NoteState>(
+        builder: (context, state) {
+          if (state is NoteLoadeState) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is NoteEmptyState) {
+            return Text("The Page is Empty");
+          } else {
+            return ListView.builder(
               itemCount: HiveHelper.MyNotes.length,
               itemBuilder: (context, index) => Stack(
                 children: [
@@ -131,11 +124,8 @@ class _NotepageState extends State<Notepage> {
                                     _key.currentState!.validate();
                                     if (_controller.text.isNotEmpty) {
                                       _controller.text;
-                                      HiveHelper.UpdateNote(
-                                        index,
-                                        _controller.text,
-                                      );
-                                      setState(() {});
+                                      cupit.UpdateNote(index,_controller.text);
+                                      //  setState(() {});
                                       Navigator.pop(context);
                                       _controller.text = "";
                                     }
@@ -169,8 +159,8 @@ class _NotepageState extends State<Notepage> {
                   ),
                   IconButton(
                     onPressed: () {
-                      HiveHelper.deleteNote(index);
-                      setState(() {});
+                      cupit.deleteNote(index);
+                      //   setState(() {});
                     },
                     icon: Padding(
                       padding: const EdgeInsets.all(15.0),
@@ -179,7 +169,11 @@ class _NotepageState extends State<Notepage> {
                   ),
                 ],
               ),
-            ),
+            );
+          }
+          ;
+        },
+      ),
     );
   }
 }
